@@ -275,8 +275,13 @@ class AutoFillManager {
   }
 
   async saveQuantitySelection(quantityValue) {
-    await StorageManager.save('selectedQuantity', quantityValue);
-    console.log('Saved quantity selection:', quantityValue);
+    const parsedQuantity = parseInt(quantityValue, 10);
+    if (Number.isNaN(parsedQuantity)) {
+      console.warn('Invalid quantity selection, skipping save:', quantityValue);
+      return;
+    }
+    await StorageManager.save('selectedQuantity', parsedQuantity);
+    console.log('Saved quantity selection:', parsedQuantity);
   }
 
   async savePaymentMethodSelection(paymentMethodValue) {
@@ -426,11 +431,23 @@ class AutoFillManager {
         return { isSuccess: false, hasError: false, errorMessage: 'No active tab' };
       }
 
-      const result = await browserAPI.tabs.sendMessage(tab.id, {
+      const result = await browserAPI.runtime.sendMessage({
         action: 'checkValidation'
       });
 
-      return result || { isSuccess: false, hasError: false, errorMessage: '' };
+      if (!result || typeof result !== 'object') {
+        return { isSuccess: false, hasError: false, errorMessage: '' };
+      }
+
+      if (!Object.prototype.hasOwnProperty.call(result, 'isSuccess')) {
+        return {
+          isSuccess: false,
+          hasError: false,
+          errorMessage: result.message || ''
+        };
+      }
+
+      return result;
     } catch (error) {
       console.error('Failed to check validation status:', error);
       return { isSuccess: false, hasError: false, errorMessage: error.message };
@@ -676,4 +693,3 @@ class AutoFillManager {
 $(document).ready(() => {
   new AutoFillManager();
 });
-

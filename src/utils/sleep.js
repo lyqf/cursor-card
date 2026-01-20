@@ -10,7 +10,13 @@ export class Sleep {
    * @returns {Promise<void>}
    */
   static sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    const duration = Number.isFinite(ms) ? Math.max(0, ms) : 0;
+    return new Promise(resolve => {
+      const timeout = setTimeout(resolve, duration);
+      if (typeof timeout?.unref === 'function') {
+        timeout.unref();
+      }
+    });
   }
 
   /**
@@ -19,6 +25,9 @@ export class Sleep {
    * @returns {Promise<void>}
    */
   static async robustSleep(ms) {
+    if (!Number.isFinite(ms) || ms <= 0) {
+      return;
+    }
     const startTime = Date.now();
     const endTime = startTime + ms;
 
@@ -36,6 +45,9 @@ export class Sleep {
    * @returns {Promise<void>}
    */
   static async sleepWithProgress(ms, callback) {
+    if (!Number.isFinite(ms) || ms <= 0) {
+      return;
+    }
     const startTime = Date.now();
     const endTime = startTime + ms;
     const interval = 50; // Update interval in ms
@@ -57,4 +69,3 @@ export class Sleep {
     }
   }
 }
-
